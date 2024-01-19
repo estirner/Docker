@@ -14,5 +14,7 @@ def main():
     if stderr:
         print(stderr.decode("utf-8"), end="", file=sys.stderr)
 
+    sys.exit(completed_process.returncode)
+
 if __name__ == "__main__":
     main()
