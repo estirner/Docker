@@ -8,9 +8,9 @@ def main():
     
     try:
         output = subprocess.check_output([command, *args], stderr=subprocess.STDOUT)
-        print(output.decode("utf-8").rstrip(), end="\n")
+        print(output.decode("utf-8").rstrip())
     except subprocess.CalledProcessError as e:
-        print(e.output.decode("utf-8").rstrip(), end="\n")
+        print(e.output.decode("utf-8").rstrip())
 
 
 if __name__ == "__main__":
