@@ -10,7 +10,7 @@ def main():
         output = subprocess.check_output([command, *args], stderr=subprocess.STDOUT)
         print(output.decode("utf-8").rstrip(), end="\n")
     except subprocess.CalledProcessError as e:
-        print(e.output.decode("utf-8").rstrip(), end="")
+        print(e.output.decode("utf-8").rstrip(), end="\n")
 
 
 if __name__ == "__main__":
