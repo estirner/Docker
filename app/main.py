@@ -9,7 +9,7 @@ def main():
     stdout, _ = completed_process.communicate()
 
     if stdout:
-        print(stdout.decode("utf-8").rstrip(), end="")
+        print(stdout.decode("utf-8"), end="\n")
 
 if __name__ == "__main__":
     main()
