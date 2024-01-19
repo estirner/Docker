@@ -6,9 +6,11 @@ def main():
     command = sys.argv[3]
     args = sys.argv[4:]
     
-    completed_process = subprocess.run([command, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print(completed_process.stdout.decode("utf-8").rstrip(), end="\n")
-    print(completed_process.stderr.decode("utf-8").rstrip(), end="")
+    try:
+        output = subprocess.check_output([command, *args], stderr=subprocess.STDOUT)
+        print(output.decode("utf-8").rstrip(), end="\n")
+    except subprocess.CalledProcessError as e:
+        print(e.output.decode("utf-8").rstrip(), end="")
 
 
 if __name__ == "__main__":
