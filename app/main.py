@@ -7,20 +7,14 @@ import tempfile
 def main():
     command = sys.argv[3]
     args = sys.argv[4:]
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        shutil.copy(command, tmpdir)
-        command = os.path.join(tmpdir, os.path.basename(command))
-        os.chroot(tmpdir)
-        completed_process = subprocess.Popen(
-            [command, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        stdout, stderr = completed_process.communicate()
-        if stdout:
-            print(stdout.decode("utf-8"), end="")
-        if stderr:
-            print(stderr.decode("utf-8"), end="", file=sys.stderr)
-        sys.exit(completed_process.returncode)
+    directory_path = tempfile.mkdtemp()
+    shutil.copy2(command, directory_path)
+    os.chroot(directory_path)
+    command = os.path.join("/", os.path.basename(command))
+    completed_process = subprocess.run([command, *args], capture_output=True)
+    print(completed_process.stdout.decode(), end="")
+    print(completed_process.stderr.decode(), end="", file=sys.stderr)
+    exit(completed_process.returncode)
 
 if __name__ == "__main__":
     main()
