@@ -10,6 +10,7 @@ def main():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         shutil.copy(command, tmpdir)
+        command = os.path.join(tmpdir, os.path.basename(command))
         os.chroot(tmpdir)
         completed_process = subprocess.Popen(
             [command, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE
