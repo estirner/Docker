@@ -24,7 +24,6 @@ def main():
 
     print(completed_process.stdout.decode(), end="")
     print(completed_process.stderr.decode(), end="", file=sys.stderr)
-
     exit(completed_process.returncode)
 
 if __name__ == "__main__":
