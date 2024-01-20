@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import ctypes
 
 def main():
     command = sys.argv[3]
@@ -12,6 +13,9 @@ def main():
     shutil.copy2(command, directory_path)
     os.chroot(directory_path)
     command = os.path.join("/", os.path.basename(command))
+
+    libc = ctypes.cdll.LoadLibrary("libc.so.6")
+    libc.unshare(0x20000000)
 
     completed_process = subprocess.run(
         ["unshare", "--fork", "--pid", "--mount-proc", command, *args],
