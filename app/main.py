@@ -1,4 +1,3 @@
-import encodings.idna
 import os
 import shutil
 import subprocess
@@ -7,50 +6,57 @@ import tempfile
 import ctypes
 import urllib.request
 import urllib.error
-import json
 import tarfile
+import json
+
+DOCKER_REGISTRY = "https://registry-1.docker.io"
+
+def authenticate(image):
+    request = urllib.request.Request(f"{DOCKER_REGISTRY}/v2/{image}/manifests/latest", headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"})
+    try:
+        response = urllib.request.urlopen(request)
+    except urllib.error.HTTPError as e:
+        auth_url = e.headers["Www-Authenticate"].split(" ")[1].split(",")[0].split("=")[1].strip('"')
+        token_response = urllib.request.urlopen(auth_url)
+        token = json.loads(token_response.read().decode())["token"]
+        return token
+
+def fetch_manifest(image, token):
+    headers = {
+        "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+        "Authorization": f"Bearer {token}"
+    }
+    request = urllib.request.Request(f"{DOCKER_REGISTRY}/v2/{image}/manifests/latest", headers=headers)
+    response = urllib.request.urlopen(request)
+    return json.loads(response.read().decode())
+
+def pull_and_extract_layers(image, manifest, token, directory_path):
+    headers = {"Authorization": f"Bearer {token}"}
+    for layer in manifest["layers"]:
+        request = urllib.request.Request(f"{DOCKER_REGISTRY}/v2/{image}/blobs/{layer['digest']}", headers=headers)
+        response = urllib.request.urlopen(request)
+        file = tarfile.open(fileobj=response, mode="r|*")
+        file.extractall(path=directory_path)
 
 def main():
-    image_name = sys.argv[1]
-    image_tag = sys.argv[2]
+    image = sys.argv[2]
+    if "/" not in image:
+        image = "library/" + image
     command = sys.argv[3]
     args = sys.argv[4:]
 
+    token = authenticate(image)
+    manifest = fetch_manifest(image, token)
+
     directory_path = tempfile.mkdtemp()
+    pull_and_extract_layers(image, manifest, token, directory_path)
+
     shutil.copy2(command, directory_path)
     os.chroot(directory_path)
     command = os.path.join("/", os.path.basename(command))
 
     libc = ctypes.cdll.LoadLibrary("libc.so.6")
     libc.unshare(0x20000000)
-
-    base_url = "https://registry.hub.docker.com"
-    if "/" not in image_name:
-        image_name = "library/" + image_name
-    manifest_url = f"{base_url}/v2/{image_name}/manifests/{image_tag}"
-    manifest_request = urllib.request.Request(manifest_url, headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"})
-    try:
-        with urllib.request.urlopen(manifest_request) as manifest_response:
-            if manifest_response.status == 200:
-                manifest = json.load(manifest_response)
-                layers = manifest["layers"]
-                for layer in layers:
-                    digest = layer["digest"]
-                    blob_url = f"{base_url}/v2/{image_name}/blobs/{digest}"
-                    blob_request = urllib.request.Request(blob_url)
-                    try:
-                        with urllib.request.urlopen(blob_request) as blob_response:
-                            if blob_response.status == 200:
-                                with tarfile.open(fileobj=blob_response, mode='r|*') as tar:
-                                    tar.extractall(path="/")
-                            else:
-                                print(f"Error: Failed to fetch layer {digest}", file=sys.stderr)
-                    except urllib.error.URLError as e:
-                        print(f"Error: Failed to open URL {blob_url}. {e}", file=sys.stderr)
-            else:
-                print(f"Error: Failed to fetch manifest for {image_name}:{image_tag}", file=sys.stderr)
-    except urllib.error.URLError as e:
-        print(f"Error: Failed to open URL {manifest_url}. {e}", file=sys.stderr)
 
     completed_process = subprocess.run(
         [command, *args],
