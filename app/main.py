@@ -5,7 +5,6 @@ import sys
 import tempfile
 import ctypes
 import json
-import base64
 import urllib.request
 import tarfile
 import io
@@ -18,7 +17,8 @@ def authenticate(image):
     except urllib.error.HTTPError as e:
         if e.code == 401:
             auth_info = e.info()['Www-Authenticate']
-            auth_url = auth_info.split('"')[1]
+            realm, service, _ = map(lambda x: x.split('=')[1].strip('"'), auth_info.split(','))
+            auth_url = f"{realm}?service={service}&scope=repository:{image}:pull"
             auth_response = urllib.request.urlopen(auth_url)
             token = json.loads(auth_response.read().decode())['token']
             return token
