@@ -10,10 +10,10 @@ import urllib.request
 import tarfile
 import io
 
-DOCKER_REGISTRY_URL = "https://registry.hub.docker.com/v2/"
+DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2/"
 
 def authenticate(image):
-    response = urllib.request.urlopen(DOCKER_REGISTRY_URL + "library/" + image + "/manifests/latest")
+    response = urllib.request.urlopen(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
     auth_info = response.info()['Www-Authenticate']
     auth_url = auth_info.split('"')[1]
     auth_response = urllib.request.urlopen(auth_url)
@@ -21,22 +21,22 @@ def authenticate(image):
     return token
 
 def fetch_manifest(image, token):
-    request = urllib.request.Request(DOCKER_REGISTRY_URL + "library/" + image + "/manifests/latest")
+    request = urllib.request.Request(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
     request.add_header("Authorization", "Bearer " + token)
     response = urllib.request.urlopen(request)
     manifest = json.loads(response.read().decode())
     return manifest
 
-def pull_and_extract_layers(manifest, token, directory_path):
+def pull_and_extract_layers(image, manifest, token, directory_path):
     for layer in manifest['layers']:
-        request = urllib.request.Request(DOCKER_REGISTRY_URL + "library/" + image + "/blobs/" + layer['digest'])
+        request = urllib.request.Request(DOCKER_REGISTRY_URL + "/" + image + "/blobs/" + layer['digest'])
         request.add_header("Authorization", "Bearer " + token)
         response = urllib.request.urlopen(request)
         layer_tar = tarfile.open(fileobj=io.BytesIO(response.read()))
         layer_tar.extractall(path=directory_path)
 
 def main():
-    image = sys.argv[3].split(':')[0]
+    image = sys.argv[2].split(':')[0]
     command = sys.argv[3]
     args = sys.argv[4:]
 
@@ -44,7 +44,7 @@ def main():
     manifest = fetch_manifest(image, token)
 
     directory_path = tempfile.mkdtemp()
-    pull_and_extract_layers(manifest, token, directory_path)
+    pull_and_extract_layers(image, manifest, token, directory_path)
     shutil.copy2(command, directory_path)
     os.chroot(directory_path)
     command = os.path.join("/", os.path.basename(command))
