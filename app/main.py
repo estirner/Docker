@@ -13,12 +13,17 @@ import io
 DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2/"
 
 def authenticate(image):
-    response = urllib.request.urlopen(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
-    auth_info = response.info()['Www-Authenticate']
-    auth_url = auth_info.split('"')[1]
-    auth_response = urllib.request.urlopen(auth_url)
-    token = json.loads(auth_response.read().decode())['token']
-    return token
+    try:
+        response = urllib.request.urlopen(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            auth_info = e.info()['Www-Authenticate']
+            auth_url = auth_info.split('"')[1]
+            auth_response = urllib.request.urlopen(auth_url)
+            token = json.loads(auth_response.read().decode())['token']
+            return token
+        else:
+            raise e
 
 def fetch_manifest(image, token):
     request = urllib.request.Request(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
