@@ -58,7 +58,7 @@ def main():
     libc.unshare(0x20000000)
 
     completed_process = subprocess.run(
-        ["unshare", "--fork", "--pid", "--mount-proc", command, *args],
+        [command, *args],
         capture_output=True
     )
 
