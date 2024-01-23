@@ -10,21 +10,13 @@ import tarfile
 import io
 
 DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2/"
+AUTH_URL = "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{image}:pull"
 
 def authenticate(image):
-    try:
-        request = urllib.request.Request(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
-        response = urllib.request.urlopen(request)
-    except urllib.error.HTTPError as e:
-        if e.code == 401:
-            auth_info = e.info()['Www-Authenticate']
-            realm, service, _ = map(lambda x: x.split('=')[1].strip('"'), auth_info.split(','))
-            auth_url = f"{realm}?service={service}&scope=repository:{image}:pull"
-            auth_response = urllib.request.urlopen(auth_url)
-            token = json.loads(auth_response.read().decode())['token']
-            return token
-        else:
-            raise e
+    auth_url = AUTH_URL.format(image=image)
+    auth_response = urllib.request.urlopen(auth_url)
+    token = json.loads(auth_response.read().decode())['token']
+    return token
 
 def fetch_manifest(image, token):
     request = urllib.request.Request(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
