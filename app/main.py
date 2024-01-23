@@ -4,38 +4,32 @@ import subprocess
 import sys
 import tempfile
 import ctypes
-import urllib.request
-import urllib.error
+import requests
 import tarfile
 import json
 
 DOCKER_REGISTRY = "https://registry-1.docker.io"
 
 def authenticate(image):
-    request = urllib.request.Request(f"{DOCKER_REGISTRY}/v2/{image}/manifests/latest", headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"})
-    try:
-        response = urllib.request.urlopen(request)
-    except urllib.error.HTTPError as e:
-        auth_url = e.headers["Www-Authenticate"].split(" ")[1].split(",")[0].split("=")[1].strip('"')
-        token_response = urllib.request.urlopen(auth_url)
-        token = json.loads(token_response.read().decode())["token"]
-        return token
+    response = requests.get(f"{DOCKER_REGISTRY}/v2/{image}/manifests/latest", headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"})
+    auth_url = response.headers["Www-Authenticate"].split(" ")[1].split(",")[0].split("=")[1].strip('"')
+    token_response = requests.get(auth_url)
+    token = token_response.json()["token"]
+    return token
 
 def fetch_manifest(image, token):
     headers = {
         "Accept": "application/vnd.docker.distribution.manifest.v2+json",
         "Authorization": f"Bearer {token}"
     }
-    request = urllib.request.Request(f"{DOCKER_REGISTRY}/v2/{image}/manifests/latest", headers=headers)
-    response = urllib.request.urlopen(request)
-    return json.loads(response.read().decode())
+    response = requests.get(f"{DOCKER_REGISTRY}/v2/{image}/manifests/latest", headers=headers)
+    return response.json()
 
 def pull_and_extract_layers(image, manifest, token, directory_path):
     headers = {"Authorization": f"Bearer {token}"}
     for layer in manifest["layers"]:
-        request = urllib.request.Request(f"{DOCKER_REGISTRY}/v2/{image}/blobs/{layer['digest']}", headers=headers)
-        response = urllib.request.urlopen(request)
-        file = tarfile.open(fileobj=response, mode="r|*")
+        response = requests.get(f"{DOCKER_REGISTRY}/v2/{image}/blobs/{layer['digest']}", headers=headers, stream=True)
+        file = tarfile.open(fileobj=response.raw, mode="r|*")
         file.extractall(path=directory_path)
 
 def main():
