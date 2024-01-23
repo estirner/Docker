@@ -12,9 +12,8 @@ import json
 DOCKER_REGISTRY = "https://registry-1.docker.io"
 
 def authenticate(image):
-    tag = "latest"
     if ":" in image:
-        image, tag = image.split(":")    
+        image, tag = image.split(":")
     request = urllib.request.Request(
         f"https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{image}:pull",
         None,
@@ -25,6 +24,10 @@ def authenticate(image):
     return data["access_token"]
 
 def fetch_manifest(image, token):
+    if ":" in image:
+        image, tag = image.split(":")
+    else:
+        tag = "latest"
     request = urllib.request.Request(
         f"https://registry.hub.docker.com/v2/library/{image}/manifests/{tag}",
         headers={
