@@ -5,9 +5,8 @@ import sys
 import tempfile
 import ctypes
 import urllib.request
-import tarfile
 import json
-import urllib.parse
+import tarfile
 
 def main():
     image_name = sys.argv[1]
@@ -27,7 +26,6 @@ def main():
     if "/" not in image_name:
         image_name = "library/" + image_name
     manifest_url = f"{base_url}/v2/{image_name}/manifests/{image_tag}"
-    manifest_url = urllib.parse.quote(manifest_url, safe=":/")
     manifest_request = urllib.request.Request(manifest_url, headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"})
     with urllib.request.urlopen(manifest_request) as manifest_response:
         if manifest_response.status == 200:
@@ -36,7 +34,6 @@ def main():
             for layer in layers:
                 digest = layer["digest"]
                 blob_url = f"{base_url}/v2/{image_name}/blobs/{digest}"
-                blob_url = urllib.parse.quote(blob_url, safe=":/")
                 blob_request = urllib.request.Request(blob_url)
                 with urllib.request.urlopen(blob_request) as blob_response:
                     if blob_response.status == 200:
