@@ -1,3 +1,4 @@
+import encodings.idna
 import os
 import shutil
 import subprocess
