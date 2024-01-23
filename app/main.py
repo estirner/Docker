@@ -13,7 +13,8 @@ DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2/"
 
 def authenticate(image):
     try:
-        response = urllib.request.urlopen(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
+        request = urllib.request.Request(DOCKER_REGISTRY_URL + "/" + image + "/manifests/latest")
+        response = urllib.request.urlopen(request)
     except urllib.error.HTTPError as e:
         if e.code == 401:
             auth_info = e.info()['Www-Authenticate']
