@@ -37,7 +37,7 @@ def pull_and_extract_layers(manifest, token, directory_path):
 
 def main():
     image = sys.argv[3].split(':')[0]
-    command = sys.argv[3].split(':')[1]
+    command = sys.argv[3]
     args = sys.argv[4:]
 
     token = authenticate(image)
