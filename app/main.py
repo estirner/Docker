@@ -41,11 +41,8 @@ def main():
                     try:
                         with urllib.request.urlopen(blob_request) as blob_response:
                             if blob_response.status == 200:
-                                with tempfile.NamedTemporaryFile() as layer_file:
-                                    shutil.copyfileobj(blob_response, layer_file)
-                                    layer_file.flush()
-                                    with tarfile.open(layer_file.name) as tar:
-                                        tar.extractall(path="/")
+                                with tarfile.open(fileobj=blob_response, mode='r|*') as tar:
+                                    tar.extractall(path="/")
                             else:
                                 print(f"Error: Failed to fetch layer {digest}", file=sys.stderr)
                     except urllib.error.URLError as e:
